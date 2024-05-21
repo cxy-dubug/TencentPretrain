@@ -26,7 +26,8 @@ class MultiHeadedAttention(nn.Module):
     self-attention refers to https://arxiv.org/pdf/1706.03762.pdf
     """
 
-    def __init__(self, hidden_size, heads_num, attention_head_size, local_kv_heads_num, dropout, has_bias=True, with_scale=True,
+    def __init__(self, hidden_size, heads_num, attention_head_size, local_kv_heads_num, dropout,
+                 seq_length,has_bias=True, with_scale=True, use_logn_attn=True,
                  lora_params=None, layer_number=None):
         super(MultiHeadedAttention, self).__init__()
         self.heads_num = heads_num
@@ -40,6 +41,16 @@ class MultiHeadedAttention(nn.Module):
         assert heads_num >= self.local_kv_heads_num, "heads_num should be greater than or equal to n_local_kv_heads"
         assert heads_num % self.local_kv_heads_num == 0, "heads_num should be divisible by n_local_kv_heads"
         self.repeat_num = self.heads_num // self.local_kv_heads_num
+
+        self.seq_length = seq_length
+        self.use_logn_attn = use_logn_attn
+        # 预计算logn值，用于logn注意力
+        logn_list = [
+            math.log(i, self.seq_length) if i > self.seq_length else 1
+            for i in range(1, 32768)
+        ]
+        logn_tensor = torch.tensor(logn_list)[None, :, None, None]
+        self.register_buffer("logn_tensor", logn_tensor, persistent=False)
 
         if lora_params is not None:
 
@@ -103,6 +114,13 @@ class MultiHeadedAttention(nn.Module):
         key = repeat_kv(key, self.repeat_num).transpose(1, 2)
         value = repeat_kv(value, self.repeat_num).transpose(1, 2)
 
+
+        key_size = key.size(1)
+        if key_size > self.seq_length and self.use_logn_attn and not self.training:
+            seq_start = key.size(1) - query.size(1)
+            seq_end = key.size(1)
+            logn_tensor = self.logn_tensor[:, seq_start:seq_end, :, :].type_as(query)
+            query = query * logn_tensor.expand_as(query)
 
         if freqs_cis is not None:
             query, key = apply_rotary_emb(query.transpose(1,2), key.transpose(1,2), freqs_cis=freqs_cis)
