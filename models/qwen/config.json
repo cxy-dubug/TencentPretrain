@@ -9,7 +9,8 @@
   "data_processor": "lm",
   "max_seq_length": 8192,
   "embedding": ["word"],
-  "remove_transformer_bias": false,
+  "remove_transformer_bias": true,
+  "remove_attention_bias": false,
   "remove_embedding_layernorm": true,
   "rotary_position_embedding": true,
   "encoder": "transformer",
@@ -18,10 +19,6 @@
   "layernorm_positioning": "pre",
   "layernorm": "rms",
   "target": ["lm"],
-  "bf16": false,
-  "fp16": false,
-  "fp32": true,
   "use_dynamic_ntk": true,
-  "use_flash_attn": "auto",
   "use_logn_attn": true
 }
