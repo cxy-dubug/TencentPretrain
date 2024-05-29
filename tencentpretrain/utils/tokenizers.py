@@ -626,7 +626,30 @@ class HFPreTrainedTokenizer(Tokenizer):
 
 class QwenTokenizer(HFPreTrainedTokenizer):
     def __init__(self, args, is_src=True):
-        super().__init__(args, is_src)
+        from transformers import AutoTokenizer
+        self.tokenizer=AutoTokenizer.from_pretrained(args.vocab_path)
+        self.sp_model=None
+        end_of_text="<|endoftext|>"
+        im_start="<|im_start|>"
+        im_end = "<|im_end|>"
+        extras = tuple((f"<|extra_{i}|>" for i in range(290)))
+        special_start_id = 151643
+        special_tokens = tuple(
+            enumerate(
+                (
+                    (
+                        end_of_text,
+                        im_start,
+                        im_end,
+                    )
+                    + extras
+                ),
+                start=special_start_id,
+            )
+        )
+        self.vocab = self.tokenizer.mergeable_ranks.copy()
+        self.vocab.update(special_tokens)
+
 
     def convert_tokens_to_string(self,tokens):
         return self.tokenizer.convert_tokens_to_string(tokens)
