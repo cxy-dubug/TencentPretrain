@@ -1,0 +1,9 @@
+{
+    "pad_token": "<|extra_0|>",
+    "unk_token": "[UNK]",
+    "cls_token": "<|im_start|>",
+    "sep_token": "<|im_end|>",
+    "mask_token": "[MASK]",
+    "sentinel_token":"<|extra_0|>",
+    "end_token":"<|endoftext|>"
+  }
